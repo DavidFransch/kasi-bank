@@ -4,6 +4,7 @@ import com.demo.kasi_bank.dto.AccountInfoDto;
 import com.demo.kasi_bank.dto.AccountResponseDto;
 import com.demo.kasi_bank.dto.UserRequestDto;
 import com.demo.kasi_bank.entity.User;
+import com.demo.kasi_bank.enums.ErrorCodes;
 import com.demo.kasi_bank.repository.UserRepository;
 import com.demo.kasi_bank.service.UserService;
 import com.demo.kasi_bank.utils.AccountUtils;
@@ -25,8 +26,8 @@ public class UserServiceImpl implements UserService {
 
         if (userRepository.existsByEmail(userRequestDto.getEmail())) {
             return AccountResponseDto.builder()
-                    .responseCode(AccountUtils.ACCOUNT_EXISTS_CODE)
-                    .responseMessage(AccountUtils.ACCOUNT_EXISTS_MESSAGE)
+                    .responseCode(ErrorCodes.ACCOUNT_EXISTS.getCode())
+                    .responseMessage(ErrorCodes.ACCOUNT_EXISTS.getMessage())
                     .accountInfoDto(null)
                     .build();
         }
@@ -52,8 +53,8 @@ public class UserServiceImpl implements UserService {
                 .build();
 
         return AccountResponseDto.builder()
-                .responseCode(AccountUtils.ACCOUNT_CREATION_CODE)
-                .responseMessage(AccountUtils.ACCOUNT_CREATION_MESSAGE)
+                .responseCode(ErrorCodes.ACCOUNT_CREATION_SUCCESS.getCode())
+                .responseMessage(ErrorCodes.ACCOUNT_CREATION_SUCCESS.getMessage())
                 .accountInfoDto(newAccountInfoDto)
                 .build();
     }
