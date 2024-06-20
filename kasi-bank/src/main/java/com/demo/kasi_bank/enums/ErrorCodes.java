@@ -8,7 +8,9 @@ public enum ErrorCodes {
     ACCOUNT_CREDITED_SUCCESS("005", "Account has been successfully credited."),
     ACCOUNT_BALANCE_INSUFFICIENT("006", "Insufficient balance."),
     ACCOUNT_DEBITED_SUCCESS("007", "Account has been successfully debited."),
-    ACCOUNT_TRANSFER_SUCCESS("008", "Account transfer success.");
+    ACCOUNT_TRANSFER_SUCCESS("008", "Account transfer success."),
+    DATA_ACCESS_ERROR("009", "An data access error occurred while processing your request."),
+    ARITHMETIC_CALCULATION_ERROR("010", "A arithmetic error occurred while processing your request.");
 
     private final String code;
     private final String message;

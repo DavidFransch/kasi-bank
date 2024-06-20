@@ -6,10 +6,13 @@ import com.demo.kasi_bank.enums.ErrorCodes;
 import com.demo.kasi_bank.repository.UserRepository;
 import com.demo.kasi_bank.service.UserService;
 import com.demo.kasi_bank.utils.AccountUtils;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 
+@Slf4j
 @Service
 public class UserServiceImpl implements UserService {
 
@@ -30,33 +33,42 @@ public class UserServiceImpl implements UserService {
                     .build();
         }
 
-        User newUser = User.builder()
-                .firstName(userRequestDto.getFirstName())
-                .lastName(userRequestDto.getLastName())
-                .address(userRequestDto.getAddress())
-                .email(userRequestDto.getEmail())
-                .phoneNumber(userRequestDto.getPhoneNumber())
-                .accountBalance(BigDecimal.ZERO)
-                .accountNumber(AccountUtils.generateAccountNumber())
-                .status("ACTIVE")
-                .build();
+        try {
+            User newUser = User.builder()
+                    .firstName(userRequestDto.getFirstName())
+                    .lastName(userRequestDto.getLastName())
+                    .address(userRequestDto.getAddress())
+                    .email(userRequestDto.getEmail())
+                    .phoneNumber(userRequestDto.getPhoneNumber())
+                    .accountBalance(BigDecimal.ZERO)
+                    .accountNumber(AccountUtils.generateAccountNumber())
+                    .status("ACTIVE")
+                    .build();
 
-        User savedUser = userRepository.save(newUser);
+            User savedUser = userRepository.save(newUser);
 
-        AccountInfoDto accountInfo = buildAccountInfo(savedUser);
+            AccountInfoDto accountInfo = buildAccountInfo(savedUser);
 
-        return AccountResponseDto.builder()
-                .responseCode(ErrorCodes.ACCOUNT_CREATION_SUCCESS.getCode())
-                .responseMessage(ErrorCodes.ACCOUNT_CREATION_SUCCESS.getMessage())
-                .accountInfoDto(accountInfo)
-                .build();
+            return AccountResponseDto.builder()
+                    .responseCode(ErrorCodes.ACCOUNT_CREATION_SUCCESS.getCode())
+                    .responseMessage(ErrorCodes.ACCOUNT_CREATION_SUCCESS.getMessage())
+                    .accountInfoDto(accountInfo)
+                    .build();
+
+        } catch (DataAccessException e) {
+            log.error("Error creating user account", e);
+            return AccountResponseDto.builder()
+                    .responseCode(ErrorCodes.DATA_ACCESS_ERROR.getCode())
+                    .responseMessage(ErrorCodes.DATA_ACCESS_ERROR.getMessage())
+                    .accountInfoDto(null)
+                    .build();
+        }
     }
 
     @Override
     public AccountResponseDto balanceEnquiry(EnquiryRequestDto enquiryRequestDto) {
 
-        boolean isAccountExists = userRepository.existsByAccountNumber(enquiryRequestDto.getAccountNumber());
-        if (!isAccountExists) {
+        if (!isAccountExists(enquiryRequestDto.getAccountNumber())) {
             return AccountResponseDto.builder()
                     .responseCode(ErrorCodes.ACCOUNT_NOT_EXIST.getCode())
                     .responseMessage(ErrorCodes.ACCOUNT_NOT_EXIST.getMessage())
@@ -64,58 +76,88 @@ public class UserServiceImpl implements UserService {
                     .build();
         }
 
-        User foundUser = userRepository.findByAccountNumber(enquiryRequestDto.getAccountNumber());
-        AccountInfoDto accountInfo = buildAccountInfo(foundUser);
+        try {
+            User foundUser = userRepository.findByAccountNumber(enquiryRequestDto.getAccountNumber());
+            AccountInfoDto accountInfo = buildAccountInfo(foundUser);
 
-        return AccountResponseDto.builder()
-                .responseCode(ErrorCodes.ACCOUNT_FOUND.getCode())
-                .responseMessage(ErrorCodes.ACCOUNT_FOUND.getMessage())
-                .accountInfoDto(accountInfo)
-                .build();
+            return AccountResponseDto.builder()
+                    .responseCode(ErrorCodes.ACCOUNT_FOUND.getCode())
+                    .responseMessage(ErrorCodes.ACCOUNT_FOUND.getMessage())
+                    .accountInfoDto(accountInfo)
+                    .build();
+
+        } catch (DataAccessException e) {
+            log.error("Error during data access operation", e);
+            return AccountResponseDto.builder()
+                    .responseCode(ErrorCodes.DATA_ACCESS_ERROR.getCode())
+                    .responseMessage(ErrorCodes.DATA_ACCESS_ERROR.getMessage())
+                    .accountInfoDto(null)
+                    .build();
+        }
+
     }
 
     @Override
     public String accountNameEnquiry(EnquiryRequestDto enquiryRequestDto) {
 
-        boolean isAccountExists = userRepository.existsByAccountNumber(enquiryRequestDto.getAccountNumber());
-        if (!isAccountExists) {
+        if (!isAccountExists(enquiryRequestDto.getAccountNumber())) {
             return ErrorCodes.ACCOUNT_NOT_EXIST.getMessage();
         }
+        try {
+            User foundUser = userRepository.findByAccountNumber(enquiryRequestDto.getAccountNumber());
+            return foundUser.getFirstName() + " " + foundUser.getLastName();
 
-        User foundUser = userRepository.findByAccountNumber(enquiryRequestDto.getAccountNumber());
-        return foundUser.getFirstName() + " " + foundUser.getLastName();
+        } catch (DataAccessException e) {
+            log.error("Error during data access operation", e);
+            return ErrorCodes.DATA_ACCESS_ERROR.getMessage();
+        }
     }
 
     @Override
     public AccountResponseDto creditAccount(CreditDebitAccountRequestDto creditDebitAccountRequestDto) {
 
-        boolean isAccountExists = userRepository.existsByAccountNumber(creditDebitAccountRequestDto.getAccountNumber());
-        if (!isAccountExists) {
+        if (!isAccountExists(creditDebitAccountRequestDto.getAccountNumber())) {
             return AccountResponseDto.builder()
                     .responseCode(ErrorCodes.ACCOUNT_NOT_EXIST.getCode())
                     .responseMessage(ErrorCodes.ACCOUNT_NOT_EXIST.getMessage())
                     .accountInfoDto(null)
                     .build();
         }
+        try {
+            User userToCredit = userRepository.findByAccountNumber(creditDebitAccountRequestDto.getAccountNumber());
+            userToCredit.setAccountBalance(userToCredit.getAccountBalance().add(creditDebitAccountRequestDto.getAmount()));
+            userRepository.save(userToCredit);
 
-        User userToCredit = userRepository.findByAccountNumber(creditDebitAccountRequestDto.getAccountNumber());
-        userToCredit.setAccountBalance(userToCredit.getAccountBalance().add(creditDebitAccountRequestDto.getAmount()));
-        userRepository.save(userToCredit);
+            AccountInfoDto accountInfo = buildAccountInfo(userToCredit);
 
-        AccountInfoDto accountInfo = buildAccountInfo(userToCredit);
+            return AccountResponseDto.builder()
+                    .responseCode(ErrorCodes.ACCOUNT_CREDITED_SUCCESS.getCode())
+                    .responseMessage(ErrorCodes.ACCOUNT_CREDITED_SUCCESS.getMessage())
+                    .accountInfoDto(accountInfo)
+                    .build();
 
-        return AccountResponseDto.builder()
-                .responseCode(ErrorCodes.ACCOUNT_CREDITED_SUCCESS.getCode())
-                .responseMessage(ErrorCodes.ACCOUNT_CREDITED_SUCCESS.getMessage())
-                .accountInfoDto(accountInfo)
-                .build();
+        } catch (DataAccessException e) {
+            log.error("Error during data access operation", e);
+            return AccountResponseDto.builder()
+                    .responseCode(ErrorCodes.DATA_ACCESS_ERROR.getCode())
+                    .responseMessage(ErrorCodes.DATA_ACCESS_ERROR.getMessage())
+                    .accountInfoDto(null)
+                    .build();
+
+        } catch (ArithmeticException e) {
+            log.error("Error performing credit operation", e);
+            return AccountResponseDto.builder()
+                    .responseCode(ErrorCodes.ARITHMETIC_CALCULATION_ERROR.getCode())
+                    .responseMessage(ErrorCodes.ARITHMETIC_CALCULATION_ERROR.getMessage())
+                    .accountInfoDto(null)
+                    .build();
+        }
     }
 
     @Override
     public AccountResponseDto debitAccount(CreditDebitAccountRequestDto debitAccountRequestDto) {
 
-        boolean isAccountExists = userRepository.existsByAccountNumber(debitAccountRequestDto.getAccountNumber());
-        if (!isAccountExists) {
+        if (!isAccountExists(debitAccountRequestDto.getAccountNumber())) {
             return AccountResponseDto.builder()
                     .responseCode(ErrorCodes.ACCOUNT_NOT_EXIST.getCode())
                     .responseMessage(ErrorCodes.ACCOUNT_NOT_EXIST.getMessage())
@@ -123,31 +165,47 @@ public class UserServiceImpl implements UserService {
                     .build();
         }
 
-        User userToDebit = userRepository.findByAccountNumber(debitAccountRequestDto.getAccountNumber());
-        BigDecimal currentAccountBalance = userToDebit.getAccountBalance();
-        BigDecimal debitAmount = debitAccountRequestDto.getAmount();
+        try {
+            User userToDebit = userRepository.findByAccountNumber(debitAccountRequestDto.getAccountNumber());
+            BigDecimal currentAccountBalance = userToDebit.getAccountBalance();
+            BigDecimal debitAmount = debitAccountRequestDto.getAmount();
 
-        boolean isBalanceSufficient = currentAccountBalance.compareTo(debitAmount) >= 0;
+            if (!isBalanceSufficient(currentAccountBalance, debitAmount)) {
+                return AccountResponseDto.builder()
+                        .responseCode(ErrorCodes.ACCOUNT_BALANCE_INSUFFICIENT.getCode())
+                        .responseMessage(ErrorCodes.ACCOUNT_BALANCE_INSUFFICIENT.getMessage())
+                        .accountInfoDto(null)
+                        .build();
+            }
 
-        if (!isBalanceSufficient) {
+            BigDecimal updatedAccountBalance = currentAccountBalance.subtract(debitAmount);
+            userToDebit.setAccountBalance(updatedAccountBalance);
+            userRepository.save(userToDebit);
+
+            AccountInfoDto accountInfo = buildAccountInfo(userToDebit);
+
             return AccountResponseDto.builder()
-                    .responseCode(ErrorCodes.ACCOUNT_BALANCE_INSUFFICIENT.getCode())
-                    .responseMessage(ErrorCodes.ACCOUNT_BALANCE_INSUFFICIENT.getMessage())
+                    .responseCode(ErrorCodes.ACCOUNT_DEBITED_SUCCESS.getCode())
+                    .responseMessage(ErrorCodes.ACCOUNT_DEBITED_SUCCESS.getMessage())
+                    .accountInfoDto(accountInfo)
+                    .build();
+        } catch (DataAccessException e) {
+            log.error("Error during data access operation", e);
+            return AccountResponseDto.builder()
+                    .responseCode(ErrorCodes.DATA_ACCESS_ERROR.getCode())
+                    .responseMessage(ErrorCodes.DATA_ACCESS_ERROR.getMessage())
+                    .accountInfoDto(null)
+                    .build();
+
+        } catch (ArithmeticException e) {
+            log.error("Error performing credit operation", e);
+            return AccountResponseDto.builder()
+                    .responseCode(ErrorCodes.ARITHMETIC_CALCULATION_ERROR.getCode())
+                    .responseMessage(ErrorCodes.ARITHMETIC_CALCULATION_ERROR.getMessage())
                     .accountInfoDto(null)
                     .build();
         }
 
-        BigDecimal updatedAccountBalance = currentAccountBalance.subtract(debitAmount);
-        userToDebit.setAccountBalance(updatedAccountBalance);
-        userRepository.save(userToDebit);
-
-        AccountInfoDto accountInfo = buildAccountInfo(userToDebit);
-
-        return AccountResponseDto.builder()
-                .responseCode(ErrorCodes.ACCOUNT_DEBITED_SUCCESS.getCode())
-                .responseMessage(ErrorCodes.ACCOUNT_DEBITED_SUCCESS.getMessage())
-                .accountInfoDto(accountInfo)
-                .build();
     }
 
     @Override
@@ -163,38 +221,63 @@ public class UserServiceImpl implements UserService {
                     .build();
         }
 
-        // Check if the source account has sufficient funds
-        User sourceAccount = userRepository.findByAccountNumber(transferRequestDto.getSourceAccountNumber());
-        BigDecimal sourceAccountBalance = sourceAccount.getAccountBalance();
-        BigDecimal transferAmount = transferRequestDto.getAmount();
-        boolean isBalanceSufficient = sourceAccountBalance.compareTo(transferAmount) >= 0;
+        try {
+            // Check if the source account has sufficient funds
+            User sourceAccount = userRepository.findByAccountNumber(transferRequestDto.getSourceAccountNumber());
+            BigDecimal sourceAccountBalance = sourceAccount.getAccountBalance();
+            BigDecimal transferAmount = transferRequestDto.getAmount();
 
-        if (!isBalanceSufficient) {
+            if (!isBalanceSufficient(sourceAccountBalance, transferAmount)) {
+                return AccountResponseDto.builder()
+                        .responseCode(ErrorCodes.ACCOUNT_BALANCE_INSUFFICIENT.getCode())
+                        .responseMessage(ErrorCodes.ACCOUNT_BALANCE_INSUFFICIENT.getMessage())
+                        .accountInfoDto(null)
+                        .build();
+            }
+
+            // Update the source account with the transfer amount
+            sourceAccount.setAccountBalance(sourceAccountBalance.subtract(transferAmount));
+            userRepository.save(sourceAccount);
+
+            // Update destination account with transfer amount
+            User destinationAccount = userRepository.findByAccountNumber(transferRequestDto.getDestinationAccountNumber());
+            BigDecimal destinationAccountBalance = destinationAccount.getAccountBalance();
+            destinationAccount.setAccountBalance(destinationAccountBalance.add(transferAmount));
+            userRepository.save(destinationAccount);
+
+            // Return the source account response
+            AccountInfoDto sourceAccountInfo = buildAccountInfo(sourceAccount);
+
             return AccountResponseDto.builder()
-                    .responseCode(ErrorCodes.ACCOUNT_BALANCE_INSUFFICIENT.getCode())
-                    .responseMessage(ErrorCodes.ACCOUNT_BALANCE_INSUFFICIENT.getMessage())
+                    .responseCode(ErrorCodes.ACCOUNT_TRANSFER_SUCCESS.getCode())
+                    .responseMessage(ErrorCodes.ACCOUNT_TRANSFER_SUCCESS.getMessage())
+                    .accountInfoDto(sourceAccountInfo)
+                    .build();
+
+        } catch (DataAccessException e) {
+            log.error("Error during data access operation", e);
+            return AccountResponseDto.builder()
+                    .responseCode(ErrorCodes.DATA_ACCESS_ERROR.getCode())
+                    .responseMessage(ErrorCodes.DATA_ACCESS_ERROR.getMessage())
+                    .accountInfoDto(null)
+                    .build();
+        } catch (ArithmeticException e) {
+            log.error("Error performing credit operation", e);
+            return AccountResponseDto.builder()
+                    .responseCode(ErrorCodes.ARITHMETIC_CALCULATION_ERROR.getCode())
+                    .responseMessage(ErrorCodes.ARITHMETIC_CALCULATION_ERROR.getMessage())
                     .accountInfoDto(null)
                     .build();
         }
 
-        // Update the source account with the transfer amount
-        sourceAccount.setAccountBalance(sourceAccountBalance.subtract(transferAmount));
-        userRepository.save(sourceAccount);
+    }
 
-        // Update destination account with transfer amount
-        User destinationAccount = userRepository.findByAccountNumber(transferRequestDto.getDestinationAccountNumber());
-        BigDecimal destinationAccountBalance = destinationAccount.getAccountBalance();
-        destinationAccount.setAccountBalance(destinationAccountBalance.add(transferAmount));
-        userRepository.save(destinationAccount);
+    private boolean isAccountExists(String accountNumber) {
+        return userRepository.existsByAccountNumber(accountNumber);
+    }
 
-        // Return the source account response
-        AccountInfoDto sourceAccountInfo = buildAccountInfo(sourceAccount);
-
-        return AccountResponseDto.builder()
-                .responseCode(ErrorCodes.ACCOUNT_TRANSFER_SUCCESS.getCode())
-                .responseMessage(ErrorCodes.ACCOUNT_TRANSFER_SUCCESS.getMessage())
-                .accountInfoDto(sourceAccountInfo)
-                .build();
+    public boolean isBalanceSufficient(BigDecimal accountBalance, BigDecimal amount) {
+        return accountBalance.compareTo(amount) >= 0;
     }
 
     private AccountInfoDto buildAccountInfo(User user) {
