@@ -1,9 +1,6 @@
 package com.demo.kasi_bank.service;
 
-import com.demo.kasi_bank.dto.AccountResponseDto;
-import com.demo.kasi_bank.dto.CreditDebitAccountRequestDto;
-import com.demo.kasi_bank.dto.EnquiryRequestDto;
-import com.demo.kasi_bank.dto.UserRequestDto;
+import com.demo.kasi_bank.dto.*;
 
 public interface UserService {
 
@@ -16,5 +13,7 @@ public interface UserService {
     AccountResponseDto creditAccount(CreditDebitAccountRequestDto creditDebitAccountRequestDto);
 
     AccountResponseDto debitAccount(CreditDebitAccountRequestDto debitAccountRequestDto);
+
+    AccountResponseDto transfer(TransferRequestDto transferRequestDto);
 
 }

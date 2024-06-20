@@ -7,7 +7,8 @@ public enum ErrorCodes {
     ACCOUNT_FOUND("004", "User account found."),
     ACCOUNT_CREDITED_SUCCESS("005", "Account has been successfully credited."),
     ACCOUNT_BALANCE_INSUFFICIENT("006", "Insufficient balance."),
-    ACCOUNT_DEBITED_SUCCESS("007", "Account has been successfully debited.");
+    ACCOUNT_DEBITED_SUCCESS("007", "Account has been successfully debited."),
+    ACCOUNT_TRANSFER_SUCCESS("008", "Account transfer success.");
 
     private final String code;
     private final String message;

@@ -43,7 +43,7 @@ public class UserServiceImpl implements UserService {
 
         User savedUser = userRepository.save(newUser);
 
-       AccountInfoDto accountInfo = buildAccountInfo(savedUser);
+        AccountInfoDto accountInfo = buildAccountInfo(savedUser);
 
         return AccountResponseDto.builder()
                 .responseCode(ErrorCodes.ACCOUNT_CREATION_SUCCESS.getCode())
@@ -147,6 +147,53 @@ public class UserServiceImpl implements UserService {
                 .responseCode(ErrorCodes.ACCOUNT_DEBITED_SUCCESS.getCode())
                 .responseMessage(ErrorCodes.ACCOUNT_DEBITED_SUCCESS.getMessage())
                 .accountInfoDto(accountInfo)
+                .build();
+    }
+
+    @Override
+    public AccountResponseDto transfer(TransferRequestDto transferRequestDto) {
+
+        // Check if the destination account exists
+        boolean destinationAccountExists = userRepository.existsByAccountNumber(transferRequestDto.getSourceAccountNumber());
+        if (!destinationAccountExists) {
+            return AccountResponseDto.builder()
+                    .responseCode(ErrorCodes.ACCOUNT_NOT_EXIST.getCode())
+                    .responseMessage(ErrorCodes.ACCOUNT_NOT_EXIST.getMessage())
+                    .accountInfoDto(null)
+                    .build();
+        }
+
+        // Check if the source account has sufficient funds
+        User sourceAccount = userRepository.findByAccountNumber(transferRequestDto.getSourceAccountNumber());
+        BigDecimal sourceAccountBalance = sourceAccount.getAccountBalance();
+        BigDecimal transferAmount = transferRequestDto.getAmount();
+        boolean isBalanceSufficient = sourceAccountBalance.compareTo(transferAmount) >= 0;
+
+        if (!isBalanceSufficient) {
+            return AccountResponseDto.builder()
+                    .responseCode(ErrorCodes.ACCOUNT_BALANCE_INSUFFICIENT.getCode())
+                    .responseMessage(ErrorCodes.ACCOUNT_BALANCE_INSUFFICIENT.getMessage())
+                    .accountInfoDto(null)
+                    .build();
+        }
+
+        // Update the source account with the transfer amount
+        sourceAccount.setAccountBalance(sourceAccountBalance.subtract(transferAmount));
+        userRepository.save(sourceAccount);
+
+        // Update destination account with transfer amount
+        User destinationAccount = userRepository.findByAccountNumber(transferRequestDto.getDestinationAccountNumber());
+        BigDecimal destinationAccountBalance = destinationAccount.getAccountBalance();
+        destinationAccount.setAccountBalance(destinationAccountBalance.add(transferAmount));
+        userRepository.save(destinationAccount);
+
+        // Return the source account response
+        AccountInfoDto sourceAccountInfo = buildAccountInfo(sourceAccount);
+
+        return AccountResponseDto.builder()
+                .responseCode(ErrorCodes.ACCOUNT_TRANSFER_SUCCESS.getCode())
+                .responseMessage(ErrorCodes.ACCOUNT_TRANSFER_SUCCESS.getMessage())
+                .accountInfoDto(sourceAccountInfo)
                 .build();
     }
 

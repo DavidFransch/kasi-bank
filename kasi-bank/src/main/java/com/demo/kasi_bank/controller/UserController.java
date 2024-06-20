@@ -1,9 +1,6 @@
 package com.demo.kasi_bank.controller;
 
-import com.demo.kasi_bank.dto.AccountResponseDto;
-import com.demo.kasi_bank.dto.CreditDebitAccountRequestDto;
-import com.demo.kasi_bank.dto.EnquiryRequestDto;
-import com.demo.kasi_bank.dto.UserRequestDto;
+import com.demo.kasi_bank.dto.*;
 import com.demo.kasi_bank.service.UserService;
 import org.springframework.web.bind.annotation.*;
 
@@ -40,5 +37,10 @@ public class UserController {
     @PostMapping("/debit")
     public AccountResponseDto debitAccount(@RequestBody CreditDebitAccountRequestDto debitAccountRequestDto) {
         return userService.debitAccount(debitAccountRequestDto);
+    }
+
+    @PostMapping("/transfer")
+    public AccountResponseDto transfer(@RequestBody TransferRequestDto transferRequestDto) {
+        return userService.transfer(transferRequestDto);
     }
 }
