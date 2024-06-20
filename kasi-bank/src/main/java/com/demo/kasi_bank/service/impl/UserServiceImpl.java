@@ -1,8 +1,6 @@
 package com.demo.kasi_bank.service.impl;
 
-import com.demo.kasi_bank.dto.AccountInfoDto;
-import com.demo.kasi_bank.dto.AccountResponseDto;
-import com.demo.kasi_bank.dto.UserRequestDto;
+import com.demo.kasi_bank.dto.*;
 import com.demo.kasi_bank.entity.User;
 import com.demo.kasi_bank.enums.ErrorCodes;
 import com.demo.kasi_bank.repository.UserRepository;
@@ -45,17 +43,119 @@ public class UserServiceImpl implements UserService {
 
         User savedUser = userRepository.save(newUser);
 
-        String accountName = savedUser.getFirstName() + " " + savedUser.getLastName();
-        AccountInfoDto newAccountInfoDto = AccountInfoDto.builder()
-                .accountName(accountName)
-                .accountBalance(savedUser.getAccountBalance())
-                .accountNumber(savedUser.getAccountNumber())
-                .build();
+       AccountInfoDto accountInfo = buildAccountInfo(savedUser);
 
         return AccountResponseDto.builder()
                 .responseCode(ErrorCodes.ACCOUNT_CREATION_SUCCESS.getCode())
                 .responseMessage(ErrorCodes.ACCOUNT_CREATION_SUCCESS.getMessage())
-                .accountInfoDto(newAccountInfoDto)
+                .accountInfoDto(accountInfo)
                 .build();
     }
+
+    @Override
+    public AccountResponseDto balanceEnquiry(EnquiryRequestDto enquiryRequestDto) {
+
+        boolean isAccountExists = userRepository.existsByAccountNumber(enquiryRequestDto.getAccountNumber());
+        if (!isAccountExists) {
+            return AccountResponseDto.builder()
+                    .responseCode(ErrorCodes.ACCOUNT_NOT_EXIST.getCode())
+                    .responseMessage(ErrorCodes.ACCOUNT_NOT_EXIST.getMessage())
+                    .accountInfoDto(null)
+                    .build();
+        }
+
+        User foundUser = userRepository.findByAccountNumber(enquiryRequestDto.getAccountNumber());
+        AccountInfoDto accountInfo = buildAccountInfo(foundUser);
+
+        return AccountResponseDto.builder()
+                .responseCode(ErrorCodes.ACCOUNT_FOUND.getCode())
+                .responseMessage(ErrorCodes.ACCOUNT_FOUND.getMessage())
+                .accountInfoDto(accountInfo)
+                .build();
+    }
+
+    @Override
+    public String accountNameEnquiry(EnquiryRequestDto enquiryRequestDto) {
+
+        boolean isAccountExists = userRepository.existsByAccountNumber(enquiryRequestDto.getAccountNumber());
+        if (!isAccountExists) {
+            return ErrorCodes.ACCOUNT_NOT_EXIST.getMessage();
+        }
+
+        User foundUser = userRepository.findByAccountNumber(enquiryRequestDto.getAccountNumber());
+        return foundUser.getFirstName() + " " + foundUser.getLastName();
+    }
+
+    @Override
+    public AccountResponseDto creditAccount(CreditDebitAccountRequestDto creditDebitAccountRequestDto) {
+
+        boolean isAccountExists = userRepository.existsByAccountNumber(creditDebitAccountRequestDto.getAccountNumber());
+        if (!isAccountExists) {
+            return AccountResponseDto.builder()
+                    .responseCode(ErrorCodes.ACCOUNT_NOT_EXIST.getCode())
+                    .responseMessage(ErrorCodes.ACCOUNT_NOT_EXIST.getMessage())
+                    .accountInfoDto(null)
+                    .build();
+        }
+
+        User userToCredit = userRepository.findByAccountNumber(creditDebitAccountRequestDto.getAccountNumber());
+        userToCredit.setAccountBalance(userToCredit.getAccountBalance().add(creditDebitAccountRequestDto.getAmount()));
+        userRepository.save(userToCredit);
+
+        AccountInfoDto accountInfo = buildAccountInfo(userToCredit);
+
+        return AccountResponseDto.builder()
+                .responseCode(ErrorCodes.ACCOUNT_CREDITED_SUCCESS.getCode())
+                .responseMessage(ErrorCodes.ACCOUNT_CREDITED_SUCCESS.getMessage())
+                .accountInfoDto(accountInfo)
+                .build();
+    }
+
+    @Override
+    public AccountResponseDto debitAccount(CreditDebitAccountRequestDto debitAccountRequestDto) {
+
+        boolean isAccountExists = userRepository.existsByAccountNumber(debitAccountRequestDto.getAccountNumber());
+        if (!isAccountExists) {
+            return AccountResponseDto.builder()
+                    .responseCode(ErrorCodes.ACCOUNT_NOT_EXIST.getCode())
+                    .responseMessage(ErrorCodes.ACCOUNT_NOT_EXIST.getMessage())
+                    .accountInfoDto(null)
+                    .build();
+        }
+
+        User userToDebit = userRepository.findByAccountNumber(debitAccountRequestDto.getAccountNumber());
+        BigDecimal currentAccountBalance = userToDebit.getAccountBalance();
+        BigDecimal debitAmount = debitAccountRequestDto.getAmount();
+
+        boolean isBalanceSufficient = currentAccountBalance.compareTo(debitAmount) >= 0;
+
+        if (!isBalanceSufficient) {
+            return AccountResponseDto.builder()
+                    .responseCode(ErrorCodes.ACCOUNT_BALANCE_INSUFFICIENT.getCode())
+                    .responseMessage(ErrorCodes.ACCOUNT_BALANCE_INSUFFICIENT.getMessage())
+                    .accountInfoDto(null)
+                    .build();
+        }
+
+        BigDecimal updatedAccountBalance = currentAccountBalance.subtract(debitAmount);
+        userToDebit.setAccountBalance(updatedAccountBalance);
+        userRepository.save(userToDebit);
+
+        AccountInfoDto accountInfo = buildAccountInfo(userToDebit);
+
+        return AccountResponseDto.builder()
+                .responseCode(ErrorCodes.ACCOUNT_DEBITED_SUCCESS.getCode())
+                .responseMessage(ErrorCodes.ACCOUNT_DEBITED_SUCCESS.getMessage())
+                .accountInfoDto(accountInfo)
+                .build();
+    }
+
+    private AccountInfoDto buildAccountInfo(User user) {
+        return AccountInfoDto.builder()
+                .accountName(user.getFirstName() + " " + user.getLastName())
+                .accountBalance(user.getAccountBalance())
+                .accountNumber(user.getAccountNumber())
+                .build();
+    }
+
 }
