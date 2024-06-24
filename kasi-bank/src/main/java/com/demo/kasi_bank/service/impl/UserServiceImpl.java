@@ -1,13 +1,19 @@
 package com.demo.kasi_bank.service.impl;
 
+import com.demo.kasi_bank.config.JwtTokenProvider;
 import com.demo.kasi_bank.dto.*;
 import com.demo.kasi_bank.entity.User;
 import com.demo.kasi_bank.enums.ErrorCodes;
+import com.demo.kasi_bank.enums.Role;
 import com.demo.kasi_bank.repository.UserRepository;
 import com.demo.kasi_bank.service.UserService;
 import com.demo.kasi_bank.utils.AccountUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -18,9 +24,19 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
 
-    public UserServiceImpl(final UserRepository userRepository) {
+    private final PasswordEncoder passwordEncoder;
+
+    private final AuthenticationManager authenticationManager;
+
+    private final JwtTokenProvider jwtTokenProvider;
+
+    public UserServiceImpl(final UserRepository userRepository, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, JwtTokenProvider jwtTokenProvider) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.authenticationManager = authenticationManager;
+        this.jwtTokenProvider = jwtTokenProvider;
     }
+
 
     @Override
     public AccountResponseDto createAccount(final UserRequestDto userRequestDto) {
@@ -39,10 +55,12 @@ public class UserServiceImpl implements UserService {
                     .lastName(userRequestDto.getLastName())
                     .address(userRequestDto.getAddress())
                     .email(userRequestDto.getEmail())
+                    .password(passwordEncoder.encode(userRequestDto.getPassword()))
                     .phoneNumber(userRequestDto.getPhoneNumber())
                     .accountBalance(BigDecimal.ZERO)
                     .accountNumber(AccountUtils.generateAccountNumber())
                     .status("ACTIVE")
+                    .role(Role.ROLE_ADMIN)
                     .build();
 
             User savedUser = userRepository.save(newUser);
@@ -272,11 +290,25 @@ public class UserServiceImpl implements UserService {
 
     }
 
+    @Override
+    public AccountResponseDto login(LoginDto loginDto) {
+        Authentication authentication;
+        authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword())
+        );
+
+        return AccountResponseDto.builder()
+                .responseCode("Login Success")
+                .responseMessage(jwtTokenProvider.generateToken(authentication))
+                .build();
+
+    }
+
     private boolean isAccountExists(String accountNumber) {
         return userRepository.existsByAccountNumber(accountNumber);
     }
 
-    public boolean isBalanceSufficient(BigDecimal accountBalance, BigDecimal amount) {
+    private boolean isBalanceSufficient(BigDecimal accountBalance, BigDecimal amount) {
         return accountBalance.compareTo(amount) >= 0;
     }
 

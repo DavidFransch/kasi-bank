@@ -14,6 +14,12 @@ public class UserController {
         this.userService = userService;
     }
 
+
+    @PostMapping("/login")
+    public AccountResponseDto login(@RequestBody LoginDto loginDto) {
+        return userService.login(loginDto);
+    }
+
     @PostMapping("/create")
     public AccountResponseDto createAccount(@RequestBody UserRequestDto userRequestDto) {
         return userService.createAccount(userRequestDto);
