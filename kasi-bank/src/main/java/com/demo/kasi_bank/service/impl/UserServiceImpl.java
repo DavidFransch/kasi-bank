@@ -30,13 +30,12 @@ public class UserServiceImpl implements UserService {
 
     private final JwtTokenProvider jwtTokenProvider;
 
-    public UserServiceImpl(final UserRepository userRepository, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, JwtTokenProvider jwtTokenProvider) {
+    public UserServiceImpl(final UserRepository userRepository, final PasswordEncoder passwordEncoder, final AuthenticationManager authenticationManager, final JwtTokenProvider jwtTokenProvider) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtTokenProvider = jwtTokenProvider;
     }
-
 
     @Override
     public AccountResponseDto createAccount(final UserRequestDto userRequestDto) {
@@ -84,7 +83,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public AccountResponseDto balanceEnquiry(EnquiryRequestDto enquiryRequestDto) {
+    public AccountResponseDto balanceEnquiry(final EnquiryRequestDto enquiryRequestDto) {
 
         if (!isAccountExists(enquiryRequestDto.getAccountNumber())) {
             return AccountResponseDto.builder()
@@ -116,7 +115,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public String accountNameEnquiry(EnquiryRequestDto enquiryRequestDto) {
+    public String accountNameEnquiry(final EnquiryRequestDto enquiryRequestDto) {
 
         if (!isAccountExists(enquiryRequestDto.getAccountNumber())) {
             return ErrorCodes.ACCOUNT_NOT_EXIST.getMessage();
@@ -132,7 +131,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public AccountResponseDto creditAccount(CreditDebitAccountRequestDto creditDebitAccountRequestDto) {
+    public AccountResponseDto creditAccount(final CreditDebitAccountRequestDto creditDebitAccountRequestDto) {
 
         if (!isAccountExists(creditDebitAccountRequestDto.getAccountNumber())) {
             return AccountResponseDto.builder()
@@ -173,7 +172,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public AccountResponseDto debitAccount(CreditDebitAccountRequestDto debitAccountRequestDto) {
+    public AccountResponseDto debitAccount(final CreditDebitAccountRequestDto debitAccountRequestDto) {
 
         if (!isAccountExists(debitAccountRequestDto.getAccountNumber())) {
             return AccountResponseDto.builder()
@@ -227,7 +226,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public AccountResponseDto transfer(TransferRequestDto transferRequestDto) {
+    public AccountResponseDto transfer(final TransferRequestDto transferRequestDto) {
 
         // Check if the destination account exists
         boolean destinationAccountExists = userRepository.existsByAccountNumber(transferRequestDto.getSourceAccountNumber());
@@ -291,7 +290,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public AccountResponseDto login(LoginDto loginDto) {
+    public AccountResponseDto login(final LoginDto loginDto) {
         Authentication authentication;
         authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword())
@@ -304,15 +303,15 @@ public class UserServiceImpl implements UserService {
 
     }
 
-    private boolean isAccountExists(String accountNumber) {
+    private boolean isAccountExists(final String accountNumber) {
         return userRepository.existsByAccountNumber(accountNumber);
     }
 
-    private boolean isBalanceSufficient(BigDecimal accountBalance, BigDecimal amount) {
+    private boolean isBalanceSufficient(final BigDecimal accountBalance, final BigDecimal amount) {
         return accountBalance.compareTo(amount) >= 0;
     }
 
-    private AccountInfoDto buildAccountInfo(User user) {
+    private AccountInfoDto buildAccountInfo(final User user) {
         return AccountInfoDto.builder()
                 .accountName(user.getFirstName() + " " + user.getLastName())
                 .accountBalance(user.getAccountBalance())
