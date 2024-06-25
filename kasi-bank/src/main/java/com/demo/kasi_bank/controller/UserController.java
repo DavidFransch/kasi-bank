@@ -2,8 +2,9 @@ package com.demo.kasi_bank.controller;
 
 import com.demo.kasi_bank.dto.*;
 import com.demo.kasi_bank.service.UserService;
-import org.springframework.cache.annotation.Cacheable;
+import jakarta.validation.Valid;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -18,35 +19,35 @@ public class UserController {
 
 
     @PostMapping("/login")
-    public AccountResponseDto login(@RequestBody LoginDto loginDto) {
+    public AccountResponseDto login(@RequestBody @Valid LoginDto loginDto) {
         return userService.login(loginDto);
     }
 
     @PostMapping("/create")
-    public AccountResponseDto createAccount(@RequestBody UserRequestDto userRequestDto) {
+    public AccountResponseDto createAccount(@RequestBody @Valid UserRequestDto userRequestDto) {
         return userService.createAccount(userRequestDto);
     }
 
     @Cacheable(cacheNames = "accountBalances", key = "#enquiryRequestDto.getAccountNumber()")
     @GetMapping("/balance-enquiry")
-    public AccountResponseDto balanceEnquiry(@RequestBody EnquiryRequestDto enquiryRequestDto) {
+    public AccountResponseDto balanceEnquiry(@RequestBody @Valid EnquiryRequestDto enquiryRequestDto) {
         return userService.balanceEnquiry(enquiryRequestDto);
     }
 
     @GetMapping("/name-enquiry")
-    public String nameEnquiry(@RequestBody EnquiryRequestDto enquiryRequestDto) {
+    public String nameEnquiry(@RequestBody @Valid EnquiryRequestDto enquiryRequestDto) {
         return userService.accountNameEnquiry(enquiryRequestDto);
     }
 
     @CacheEvict(cacheNames = "accountBalances", condition = "#result.responseCode == '005'", key = "#creditAccountRequestDto.getAccountNumber()")
     @PostMapping("/credit")
-    public AccountResponseDto creditAccount(@RequestBody CreditDebitAccountRequestDto creditAccountRequestDto) {
+    public AccountResponseDto creditAccount(@RequestBody @Valid CreditDebitAccountRequestDto creditAccountRequestDto) {
         return userService.creditAccount(creditAccountRequestDto);
     }
 
     @CacheEvict(cacheNames = "accountBalances", condition = "#result.responseCode == '007'", key = "#debitAccountRequestDto.getAccountNumber()")
     @PostMapping("/debit")
-    public AccountResponseDto debitAccount(@RequestBody CreditDebitAccountRequestDto debitAccountRequestDto) {
+    public AccountResponseDto debitAccount(@RequestBody @Valid CreditDebitAccountRequestDto debitAccountRequestDto) {
         return userService.debitAccount(debitAccountRequestDto);
     }
 
@@ -54,7 +55,7 @@ public class UserController {
             condition = "#result.responseCode == '008'",
             key = "#transferRequestDto.sourceAccountNumber.concat('-').concat(#transferRequestDto.destinationAccountNumber)")
     @PostMapping("/transfer")
-    public AccountResponseDto transfer(@RequestBody TransferRequestDto transferRequestDto) {
+    public AccountResponseDto transfer(@RequestBody @Valid TransferRequestDto transferRequestDto) {
         return userService.transfer(transferRequestDto);
     }
 }
