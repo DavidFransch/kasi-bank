@@ -4,7 +4,7 @@ import com.demo.kasi_bank.dto.*;
 
 public interface UserService {
 
-    AccountResponseDto login(LoginDto loginDto);
+    LoginResponseDto login(LoginRequestDto loginRequestDto);
 
     AccountResponseDto createAccount(UserRequestDto userRequestDto);
 

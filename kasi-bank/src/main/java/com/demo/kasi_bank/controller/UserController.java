@@ -5,9 +5,11 @@ import com.demo.kasi_bank.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
+@Validated
 @RequestMapping("/api/users/")
 public class UserController {
 
@@ -19,8 +21,8 @@ public class UserController {
 
 
     @PostMapping("/login")
-    public AccountResponseDto login(@RequestBody @Valid LoginDto loginDto) {
-        return userService.login(loginDto);
+    public LoginResponseDto login(@RequestBody @Valid LoginRequestDto loginRequestDto) {
+        return userService.login(loginRequestDto);
     }
 
     @PostMapping("/create")

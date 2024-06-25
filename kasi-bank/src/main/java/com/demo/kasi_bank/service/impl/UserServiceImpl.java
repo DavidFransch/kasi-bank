@@ -59,7 +59,7 @@ public class UserServiceImpl implements UserService {
                     .accountBalance(BigDecimal.ZERO)
                     .accountNumber(AccountUtils.generateAccountNumber())
                     .status("ACTIVE")
-                    .role(Role.ROLE_ADMIN)
+                    .role(Role.ROLE_ADMIN) // TODO: update based on user role
                     .build();
 
             User savedUser = userRepository.save(newUser);
@@ -290,15 +290,16 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public AccountResponseDto login(final LoginDto loginDto) {
+    public LoginResponseDto login(final LoginRequestDto loginRequestDto) {
         Authentication authentication;
         authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword())
+                new UsernamePasswordAuthenticationToken(loginRequestDto.getEmail(), loginRequestDto.getPassword())
         );
 
-        return AccountResponseDto.builder()
-                .responseCode("Login Success")
-                .responseMessage(jwtTokenProvider.generateToken(authentication))
+        return LoginResponseDto.builder()
+                .responseCode(ErrorCodes.ACCOUNT_LOGIN_SUCCESS.getCode())
+                .responseMessage(ErrorCodes.ACCOUNT_LOGIN_SUCCESS.getMessage())
+                .responseJwtToken(jwtTokenProvider.generateToken(authentication))
                 .build();
 
     }

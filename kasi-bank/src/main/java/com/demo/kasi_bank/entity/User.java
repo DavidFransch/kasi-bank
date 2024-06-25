@@ -50,8 +50,6 @@ public class User implements UserDetails {
 
     @NotBlank(message = "Password cannot be blank")
     @Size(min = 8, message = "Password must be at least 8 characters")
-    @Pattern(regexp = "(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[@$!%*?&])[A-Za-z0-9@$!%*?&]{8,}",
-            message = "Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character")
     private String password;
 
     @NotBlank(message = "Phone number cannot be blank")
