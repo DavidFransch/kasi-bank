@@ -312,7 +312,7 @@ public class UserServiceImpl implements UserService {
         return accountBalance.compareTo(amount) >= 0;
     }
 
-    private AccountInfoDto buildAccountInfo(final User user) {
+    public AccountInfoDto buildAccountInfo(final User user) {
         return AccountInfoDto.builder()
                 .accountName(user.getFirstName() + " " + user.getLastName())
                 .accountBalance(user.getAccountBalance())
