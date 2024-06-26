@@ -59,9 +59,9 @@ kasi_bank(project-root)/
 
 #### Reliability:
 
-- Implemented error handling for common situations
-- Added additional error handling for unexpected circumstances
-- Added basic logging for debugging
+- Implemented error handling for common situations.
+- Added additional error handling for unexpected circumstances.
+- Added basic logging for debugging.
 
 ### Next Steps
 
@@ -75,7 +75,8 @@ kasi_bank(project-root)/
 
 **Database Connection Pooling**:
 
-- Implement connection pooling to efficiently manage database connections. This prevents creating a new connection for
+- Implement connection pooling to efficiently manage database connections. 
+- This prevents creating a new connection for
   every request, improving performance under high load.
 
 **Microservices Architecture**:
@@ -85,7 +86,7 @@ kasi_bank(project-root)/
 #### Security:
 
 - Implement control access to API endpoints based on user roles and permissions.
-- Add further data encryption to other sensitive data such as account numbers and balances
+- Add further data encryption to other sensitive data such as account numbers and balances.
 
 #### Performance:
 
@@ -95,4 +96,4 @@ kasi_bank(project-root)/
 
 - Implement more robust error handling to gracefully handle unexpected situations.
 - Implement a circuit breaker pattern to handle failing external dependencies gracefully.
-- Set up monitoring tools to track API health and performance metrics
+- Set up monitoring tools to track API health and performance metrics.
